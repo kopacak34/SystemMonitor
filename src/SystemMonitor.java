@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 
@@ -8,9 +9,11 @@ public class SystemMonitor {
 
     private static JProgressBar cpuBar;
     private static JProgressBar ramBar;
+    private static JProgressBar diskBar;
 
     private static volatile int cpuPercent = 0;
     private static volatile int ramPercent = 0;
+    private static volatile int diskPercent = 0;
 
 
     public static void main(String[] args) {
@@ -18,8 +21,10 @@ public class SystemMonitor {
         createGUI();
         Thread cpuThread = new Thread(SystemMonitor::monitorCPU);
         Thread ramThread = new Thread(SystemMonitor::monitorRAM);
+        Thread diskThread = new Thread(SystemMonitor::monitorDisk);
         cpuThread.start();
         ramThread.start();
+        diskThread.start();
     }
 
     private static void createGUI() {
@@ -35,10 +40,15 @@ public class SystemMonitor {
         ramBar.setStringPainted(true);
         ramBar.setBorder(BorderFactory.createTitledBorder("RAM Usage"));
 
+        diskBar = new JProgressBar(0, 100);
+        diskBar.setStringPainted(true);
+        diskBar.setBorder(BorderFactory.createTitledBorder("Disk Usage"));
+
 
         frame.setLayout(new GridLayout(4, 1));
         frame.add(cpuBar);
         frame.add(ramBar);
+        frame.add(diskBar);
         frame.setVisible(true);
     }
 
@@ -60,6 +70,17 @@ public class SystemMonitor {
             ramPercent = (int)((double)(totalPhysical - freePhysical) / totalPhysical * 100);
 
             SwingUtilities.invokeLater(() -> ramBar.setValue(ramPercent));
+            sleep(1000);
+        }
+    }
+
+    private static void monitorDisk() {
+        File disk = new File("C:/"); // změň podle OS
+        while(true) {
+            long freeSpace = disk.getFreeSpace();
+            long totalSpace = disk.getTotalSpace();
+            diskPercent = (int)((double)(totalSpace - freeSpace) / totalSpace * 100);
+            SwingUtilities.invokeLater(() -> diskBar.setValue(diskPercent));
             sleep(1000);
         }
     }
