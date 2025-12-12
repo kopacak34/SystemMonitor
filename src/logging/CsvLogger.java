@@ -1,42 +1,39 @@
 package logging;
 
-import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.Properties;
 
 public class CsvLogger {
 
     private final FileWriter writer;
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public CsvLogger() throws IOException {
-        File file = new File("system_log.csv");
-        boolean isNewFile = !file.exists() || file.length() == 0;
-        writer = new FileWriter(file, true); // true = append mode
-
-        if (isNewFile) {
-            writer.write("Timestamp,CPU,RAM,DISK\n");
-            writer.flush();
-        }
+    public CsvLogger(String path) throws IOException {
+        writer = new FileWriter(path, true); // append = true
+        writer.write("Timestamp,CPU,RAM,DISK\n");
     }
 
     public synchronized void log(int cpu, int ram, int disk) {
         try {
-            String timestamp = LocalDateTime.now().format(formatter);
-            writer.write(String.format("%s,%d,%d,%d%n", timestamp, cpu, ram, disk));
+            writer.write(LocalDateTime.now() + "," + cpu + "," + ram + "," + disk + "\n");
             writer.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException ignored) {}
     }
 
-    public synchronized void close() {
-        try {
-            writer.close();
+    public static Properties loadConfig() {
+        Properties config = new Properties();
+        try (FileInputStream fis = new FileInputStream(Paths.get("config", "config.properties").toFile())) {
+            config.load(fis);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Config soubor nenalezen, použity default hodnoty.");
+            config.setProperty("update.interval", "1000");
+            config.setProperty("history.size", "60");
+            config.setProperty("disk.path", "C:/");
+            config.setProperty("csv.path", "system_log.csv");
         }
+        return config;
     }
 }

@@ -1,38 +1,43 @@
 package monitor;
 
 import history.HistoryBuffer;
+import logging.CsvLogger;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 
 public class RamMonitor implements Runnable {
 
     private final HistoryBuffer history;
+    private final int interval;
+    private final CsvLogger logger;
+
     private volatile int currentValue;
 
-    public RamMonitor(HistoryBuffer history) {
+    public RamMonitor(HistoryBuffer history, int interval, CsvLogger logger) {
         this.history = history;
-    }
-
-    public int getCurrentValue() {
-        return currentValue;
+        this.interval = interval;
+        this.logger = logger;
     }
 
     @Override
     public void run() {
-        OperatingSystemMXBean os =
-                ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
+        OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
 
-        while (true) {
-            long total = os.getTotalPhysicalMemorySize();
-            long free = os.getFreePhysicalMemorySize();
-            currentValue = (int) ((total - free) * 100 / total);
+        while(true) {
+            long total = osBean.getTotalPhysicalMemorySize();
+            long free = osBean.getFreePhysicalMemorySize();
+            currentValue = (int)((double)(total - free) / total * 100);
+
             history.add(currentValue);
-            sleep();
+            logger.log(-1, currentValue, -1); // -1 = ignorovat CPU a Disk
+
+            try {
+                Thread.sleep(interval);
+            } catch (InterruptedException e) { e.printStackTrace(); }
         }
     }
 
-    private void sleep() {
-        try { Thread.sleep(1000); }
-        catch (InterruptedException ignored) {}
+    public int getCurrentValue() {
+        return currentValue;
     }
 }

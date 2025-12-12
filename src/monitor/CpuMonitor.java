@@ -1,36 +1,40 @@
 package monitor;
 
 import history.HistoryBuffer;
+import logging.CsvLogger;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 
 public class CpuMonitor implements Runnable {
 
     private final HistoryBuffer history;
+    private final int interval;
+    private final CsvLogger logger;
+
     private volatile int currentValue;
 
-    public CpuMonitor(HistoryBuffer history) {
+    public CpuMonitor(HistoryBuffer history, int interval, CsvLogger logger) {
         this.history = history;
-    }
-
-    public int getCurrentValue() {
-        return currentValue;
+        this.interval = interval;
+        this.logger = logger;
     }
 
     @Override
     public void run() {
-        OperatingSystemMXBean os =
-                ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
-
-        while (true) {
-            currentValue = (int) (os.getSystemCpuLoad() * 100);
+        OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
+        while(true) {
+            double load = osBean.getSystemCpuLoad();
+            currentValue = (int)(load * 100);
             history.add(currentValue);
-            sleep();
+            logger.log(currentValue, -1, -1); // -1 znamená, že hodnotu ignorovat
+
+            try {
+                Thread.sleep(interval);
+            } catch (InterruptedException e) { e.printStackTrace(); }
         }
     }
 
-    private void sleep() {
-        try { Thread.sleep(1000); }
-        catch (InterruptedException ignored) {}
+    public int getCurrentValue() {
+        return currentValue;
     }
 }

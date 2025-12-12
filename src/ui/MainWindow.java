@@ -1,49 +1,51 @@
 package ui;
 
-import history.*;
+import history.HistoryBuffer;
+import history.HistoryGraphPanel;
 import logging.CsvLogger;
-import monitor.*;
+import monitor.CpuMonitor;
+import monitor.RamMonitor;
+import monitor.DiskMonitor;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
+import java.util.Properties;
 
 public class MainWindow {
 
-    private final HistoryBuffer cpuHistory = new HistoryBuffer(60);
-    private final HistoryBuffer ramHistory = new HistoryBuffer(60);
-    private final HistoryBuffer diskHistory = new HistoryBuffer(60);
+    private HistoryBuffer cpuHistory;
+    private HistoryBuffer ramHistory;
+    private HistoryBuffer diskHistory;
 
-    private CsvLogger logger; // přidáno
+    private int interval;
 
     public void start() {
-        // vytvoření loggeru
+        // Načtení konfigurace
+        Properties config = CsvLogger.loadConfig();
+        interval = Integer.parseInt(config.getProperty("update.interval", "1000"));
+        int historySize = Integer.parseInt(config.getProperty("history.size", "60"));
+        String diskPath = config.getProperty("disk.path", "C:/");
+
+        cpuHistory = new HistoryBuffer(historySize);
+        ramHistory = new HistoryBuffer(historySize);
+        diskHistory = new HistoryBuffer(historySize);
+
+        CsvLogger logger;
         try {
-            logger = new CsvLogger();
+            logger = new CsvLogger(config.getProperty("csv.path", "system_log.csv"));
         } catch (IOException e) {
             e.printStackTrace();
-            return; // pokud se logger nepodaří, ukončíme start
+            return;
         }
 
-        CpuMonitor cpu = new CpuMonitor(cpuHistory);
-        RamMonitor ram = new RamMonitor(ramHistory);
-        DiskMonitor disk = new DiskMonitor(diskHistory, "C:/");
+        CpuMonitor cpu = new CpuMonitor(cpuHistory, interval, logger);
+        RamMonitor ram = new RamMonitor(ramHistory, interval, logger);
+        DiskMonitor disk = new DiskMonitor(diskHistory, diskPath, interval, logger);
 
         new Thread(cpu).start();
         new Thread(ram).start();
         new Thread(disk).start();
-
-        // vlákno pro zapisování logu
-        new Thread(() -> {
-            while (true) {
-                logger.log(cpu.getCurrentValue(), ram.getCurrentValue(), disk.getCurrentValue());
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
 
         SwingUtilities.invokeLater(() -> createUI(cpu, ram, disk));
     }
@@ -57,10 +59,9 @@ public class MainWindow {
         JProgressBar ramBar = createBar("RAM");
         JProgressBar diskBar = createBar("Disk");
 
-        HistoryGraphPanel graph =
-                new HistoryGraphPanel(cpuHistory, ramHistory, diskHistory);
+        HistoryGraphPanel graph = new HistoryGraphPanel(cpuHistory, ramHistory, diskHistory);
 
-        Timer timer = new Timer(1000, e -> {
+        Timer timer = new Timer(interval, e -> {
             cpuBar.setValue(cpu.getCurrentValue());
             ramBar.setValue(ram.getCurrentValue());
             diskBar.setValue(disk.getCurrentValue());
