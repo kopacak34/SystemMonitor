@@ -43,6 +43,14 @@ public class MainWindow {
         RamMonitor ram = new RamMonitor(ramHistory, interval, logger);
         DiskMonitor disk = new DiskMonitor(diskHistory, diskPath, interval, logger);
 
+        // Centrální zapisovací vlákno pro log
+        new Thread(() -> {
+            while (true) {
+                logger.log(cpu.getCurrentValue(), ram.getCurrentValue(), disk.getCurrentValue());
+                try { Thread.sleep(interval); } catch (InterruptedException e) { e.printStackTrace(); }
+            }
+        }).start();
+
         new Thread(cpu).start();
         new Thread(ram).start();
         new Thread(disk).start();

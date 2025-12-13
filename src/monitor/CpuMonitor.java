@@ -10,8 +10,7 @@ public class CpuMonitor implements Runnable {
     private final HistoryBuffer history;
     private final int interval;
     private final CsvLogger logger;
-
-    private volatile int currentValue;
+    private volatile int currentValue = 0;
 
     public CpuMonitor(HistoryBuffer history, int interval, CsvLogger logger) {
         this.history = history;
@@ -22,19 +21,14 @@ public class CpuMonitor implements Runnable {
     @Override
     public void run() {
         OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
-        while(true) {
+        while (true) {
             double load = osBean.getSystemCpuLoad();
             currentValue = (int)(load * 100);
             history.add(currentValue);
-            logger.log(currentValue, -1, -1); // -1 znamená, že hodnotu ignorovat
 
-            try {
-                Thread.sleep(interval);
-            } catch (InterruptedException e) { e.printStackTrace(); }
+            try { Thread.sleep(interval); } catch (InterruptedException e) { e.printStackTrace(); }
         }
     }
 
-    public int getCurrentValue() {
-        return currentValue;
-    }
+    public int getCurrentValue() { return currentValue; }
 }

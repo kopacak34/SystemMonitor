@@ -1,5 +1,6 @@
 package logging;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -12,8 +13,13 @@ public class CsvLogger {
     private final FileWriter writer;
 
     public CsvLogger(String path) throws IOException {
-        writer = new FileWriter(path, true); // append = true
-        writer.write("Timestamp,CPU,RAM,DISK\n");
+        File file = new File(path);
+        boolean writeHeader = !file.exists() || file.length() == 0;
+
+        writer = new FileWriter(file, true); // append = true
+        if (writeHeader) {
+            writer.write("Timestamp,CPU,RAM,DISK\n");
+        }
     }
 
     public synchronized void log(int cpu, int ram, int disk) {

@@ -10,8 +10,7 @@ public class RamMonitor implements Runnable {
     private final HistoryBuffer history;
     private final int interval;
     private final CsvLogger logger;
-
-    private volatile int currentValue;
+    private volatile int currentValue = 0;
 
     public RamMonitor(HistoryBuffer history, int interval, CsvLogger logger) {
         this.history = history;
@@ -22,22 +21,15 @@ public class RamMonitor implements Runnable {
     @Override
     public void run() {
         OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
-
-        while(true) {
-            long total = osBean.getTotalPhysicalMemorySize();
-            long free = osBean.getFreePhysicalMemorySize();
-            currentValue = (int)((double)(total - free) / total * 100);
-
+        while (true) {
+            long totalMemory = osBean.getTotalPhysicalMemorySize();
+            long freeMemory = osBean.getFreePhysicalMemorySize();
+            currentValue = (int)((double)(totalMemory - freeMemory) / totalMemory * 100);
             history.add(currentValue);
-            logger.log(-1, currentValue, -1); // -1 = ignorovat CPU a Disk
 
-            try {
-                Thread.sleep(interval);
-            } catch (InterruptedException e) { e.printStackTrace(); }
+            try { Thread.sleep(interval); } catch (InterruptedException e) { e.printStackTrace(); }
         }
     }
 
-    public int getCurrentValue() {
-        return currentValue;
-    }
+    public int getCurrentValue() { return currentValue; }
 }
