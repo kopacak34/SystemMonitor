@@ -4,12 +4,46 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
+/**
+ * Panel pro grafické zobrazení historických dat systému.
+ * <p>
+ * Zobrazuje průběh využití CPU, RAM a disku v čase
+ * pomocí čárového grafu. Data jsou čerpána z objektů
+ * {@link HistoryBuffer}, které uchovávají poslední hodnoty.
+ * </p>
+ *
+ * <p>
+ * Barvy grafů:
+ * <ul>
+ *     <li>CPU – červená</li>
+ *     <li>RAM – zelená</li>
+ *     <li>Disk – tyrkysová</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Panel je určen k pravidelnému překreslování (např. pomocí
+ * {@link javax.swing.Timer}) v hlavním okně aplikace.
+ * </p>
+ */
 public class HistoryGraphPanel extends JPanel {
 
+    /** Historie využití CPU */
     private final HistoryBuffer cpu;
+
+    /** Historie využití RAM */
     private final HistoryBuffer ram;
+
+    /** Historie využití disku */
     private final HistoryBuffer disk;
 
+    /**
+     * Vytvoří panel pro vykreslení grafů historie systému.
+     *
+     * @param cpu  historie hodnot CPU
+     * @param ram  historie hodnot RAM
+     * @param disk historie hodnot disku
+     */
     public HistoryGraphPanel(HistoryBuffer cpu, HistoryBuffer ram, HistoryBuffer disk) {
         this.cpu = cpu;
         this.ram = ram;
@@ -18,6 +52,15 @@ public class HistoryGraphPanel extends JPanel {
         setBackground(Color.BLACK);
     }
 
+    /**
+     * Překreslení komponenty.
+     * <p>
+     * Vykreslí osy grafu, jednotlivé datové řady
+     * a legendu.
+     * </p>
+     *
+     * @param g grafický kontext
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -28,12 +71,24 @@ public class HistoryGraphPanel extends JPanel {
         drawLegend(g);
     }
 
+    /**
+     * Vykreslí osy grafu (X a Y).
+     *
+     * @param g grafický kontext
+     */
     private void drawAxis(Graphics g) {
         g.setColor(Color.GRAY);
-        g.drawLine(40, 10, 40, getHeight() - 20);
-        g.drawLine(40, getHeight() - 20, getWidth() - 10, getHeight() - 20);
+        g.drawLine(40, 10, 40, getHeight() - 20);               // osa Y
+        g.drawLine(40, getHeight() - 20, getWidth() - 10, getHeight() - 20); // osa X
     }
 
+    /**
+     * Vykreslí jednu datovou řadu do grafu.
+     *
+     * @param g     grafický kontext
+     * @param data  seznam hodnot (0–100)
+     * @param color barva čáry
+     */
     private void drawLine(Graphics g, List<Integer> data, Color color) {
         if (data.size() < 2) return;
 
@@ -51,6 +106,11 @@ public class HistoryGraphPanel extends JPanel {
         }
     }
 
+    /**
+     * Vykreslí legendu grafu s popisem jednotlivých křivek.
+     *
+     * @param g grafický kontext
+     */
     private void drawLegend(Graphics g) {
         g.setColor(Color.RED);
         g.drawString("CPU", 50, 15);
@@ -60,4 +120,3 @@ public class HistoryGraphPanel extends JPanel {
         g.drawString("DISK", 140, 15);
     }
 }
-
